@@ -11,10 +11,6 @@
 pthread_t thread;
 
 
-JavaVM *javaVM;
-JavaListener *javaListener;
-
-
 void *normalCallBack(void *data) {
     LOGD("create normal thread from C++");
     pthread_exit(&thread);
@@ -114,24 +110,30 @@ Java_com_bosma_jnithread_ThreadDemo_stopMutexThread(JNIEnv *env, jobject instanc
 
 }
 
+JavaVM *javaVM;
+JavaListener *javaListener;
+
+pthread_t childThread;
+
+void *childThreadCallBack(void *data) {
+
+    JavaListener *javaListener1 = (JavaListener *)(data);
+    javaListener1->onError(0, 101, "C++ Call Java Method from Child Thread");
+    pthread_exit(&childThread);
+
+}
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_bosma_jnithread_ThreadDemo_callBackFromC(JNIEnv *env, jobject instance) {
 
     javaListener = new JavaListener(javaVM, env, env->NewGlobalRef(instance));
-    javaListener->onError(1, 100, "C++ Call Java Method from Main Thread");
+//    javaListener->onError(1, 100, "C++ Call Java Method from Main Thread");
+
+    pthread_create(&childThread, NULL, childThreadCallBack, javaListener);
+
+
 }
-
-
-//JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
-//    JNIEnv *env;
-//    javaVM = vm;
-////    if (vm->GetEnv((void **) (&env), JNI_VERSION_1_6) != JNI_OK) {
-////        return -1;
-////    }
-//
-//}
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv *env;
@@ -140,5 +142,5 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    return JNI_VERSION_1_4;
+    return JNI_VERSION_1_6;
 }
