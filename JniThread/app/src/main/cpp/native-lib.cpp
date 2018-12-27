@@ -10,6 +10,11 @@
 
 pthread_t thread;
 
+
+JavaVM *javaVM;
+JavaListener *javaListener;
+
+
 void *normalCallBack(void *data) {
     LOGD("create normal thread from C++");
     pthread_exit(&thread);
@@ -110,10 +115,6 @@ Java_com_bosma_jnithread_ThreadDemo_stopMutexThread(JNIEnv *env, jobject instanc
 }
 
 
-JavaVM *javaVM;
-JavaListener *javaListener;
-
-
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_bosma_jnithread_ThreadDemo_callBackFromC(JNIEnv *env, jobject instance) {
@@ -123,11 +124,21 @@ Java_com_bosma_jnithread_ThreadDemo_callBackFromC(JNIEnv *env, jobject instance)
 }
 
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+//JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+//    JNIEnv *env;
+//    javaVM = vm;
+////    if (vm->GetEnv((void **) (&env), JNI_VERSION_1_6) != JNI_OK) {
+////        return -1;
+////    }
+//
+//}
+
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv *env;
     javaVM = vm;
     if (vm->GetEnv((void **) (&env), JNI_VERSION_1_6) != JNI_OK) {
         return -1;
     }
 
+    return JNI_VERSION_1_4;
 }

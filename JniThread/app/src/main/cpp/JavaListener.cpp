@@ -20,7 +20,7 @@ JavaListener::JavaListener(JavaVM *vm, _JNIEnv *env, jobject job) {
     if (!clz) {
         return;
     }
-    jmid = env->GetMethodID(clz, "onError", "((ILjava/lang/String;))V");
+    jmid = env->GetMethodID(clz, "onError", "(ILjava/lang/String;)V");
 
 }
 

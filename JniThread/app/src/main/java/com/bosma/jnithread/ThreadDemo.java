@@ -32,12 +32,8 @@ public class ThreadDemo {
         }
 
     }
-
     public interface OnErrorListener {
-        public void onError(int code, String msg);
+        void onError(int code, String msg);
     }
-
-
-
 
 }
