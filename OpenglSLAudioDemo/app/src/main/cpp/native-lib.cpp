@@ -5,16 +5,20 @@
 #include <SLES/OpenSLES_Android.h>
 #include "AndroidLog.h"
 
+//引擎接口
 SLObjectItf engineObject = NULL;
 SLEngineItf engineEngine = NULL;
 
+//混音器
 SLObjectItf outputMixObject = NULL;
 SLEnvironmentalReverbItf outputMixEnvironmentReverb = NULL;
 SLEnvironmentalReverbSettings reverbSettings = SL_I3DL2_ENVIRONMENT_PRESET_STONECORRIDOR;
 
-
+//PCM
 SLObjectItf pcmPlayerObject = NULL;
 SLPlayItf pcmPlayerPlay = NULL;
+
+//缓冲队列接口
 SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
 
 FILE *pcmFile;
@@ -24,7 +28,7 @@ uint8_t *out_buffer;
 int getPcmData(void **pcm) {
     int size = 0;
     while (!feof(pcmFile)) {
-        size = fread(out_buffer, 1, 44100 * 2 * 2,  pcmFile);
+        size = fread(out_buffer, 1, 44100 * 2 * 2, pcmFile);
         if (out_buffer == NULL) {
             if (LOG_DEBUG) {
                 LOGE("Read end");
@@ -67,27 +71,35 @@ Java_com_bosma_openglslaudiodemo_MainActivity_playpcm(JNIEnv *env, jobject insta
 
     out_buffer = (uint8_t *) malloc(44100 * 2 * 2);
 
+
+    SLresult result;
     //第一步
     //创建
-    slCreateEngine(&engineObject, 0, 0, 0, 0, 0);
-
+    result = slCreateEngine(&engineObject, 0, 0, 0, 0, 0);
     //realize
-    (*engineObject)->Realize(engineObject, SL_BOOLEAN_FALSE);
-
+    result = (*engineObject)->Realize(engineObject, SL_BOOLEAN_FALSE);
     //Get engineEngine
-    (*engineObject)->GetInterface(engineObject, SL_IID_ENGINE, &engineEngine);
+    result = (*engineObject)->GetInterface(engineObject, SL_IID_ENGINE, &engineEngine);
 
     //第二步：创建混音器
     const SLInterfaceID mids[1] = {SL_IID_ENVIRONMENTALREVERB};//都只放一个
     const SLboolean mreq[1] = {SL_BOOLEAN_FALSE};
 
-    (*engineEngine)->CreateOutputMix(engineEngine, &outputMixObject, 1, mids, mreq);
-    (*outputMixObject)->Realize(outputMixObject, SL_BOOLEAN_FALSE);
-    (*outputMixObject)->GetInterface(outputMixObject, SL_IID_ENVIRONMENTALREVERB,
-                                     &outputMixEnvironmentReverb);
-    (*outputMixEnvironmentReverb)->SetEnvironmentalReverbProperties(outputMixEnvironmentReverb,
-                                                                    &reverbSettings);
+    result = (*engineEngine)->CreateOutputMix(engineEngine, &outputMixObject, 1, mids, mreq);
+    (void) result;
+    result = (*outputMixObject)->Realize(outputMixObject, SL_BOOLEAN_FALSE);
+    (void) result;
+    result = (*outputMixObject)->GetInterface(outputMixObject, SL_IID_ENVIRONMENTALREVERB,
+                                              &outputMixEnvironmentReverb);
+    if (SL_RESULT_SUCCESS == result) {
+        (*outputMixEnvironmentReverb)->SetEnvironmentalReverbProperties(outputMixEnvironmentReverb,
+                                                                        &reverbSettings);
+        (void) result;
+    }
 
+
+    SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
+    SLDataSink audioSnk = {&outputMix, NULL};
     //创建播放器
     SLDataLocator_AndroidBufferQueue androidBufferQueue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
                                                            2};
@@ -101,14 +113,12 @@ Java_com_bosma_openglslaudiodemo_MainActivity_playpcm(JNIEnv *env, jobject insta
             SL_BYTEORDER_LITTLEENDIAN
 
     };
-    SLDataSource slDataSource =  {&androidBufferQueue, &pcm};
+
 
     const SLInterfaceID ids[1] = {SL_IID_BUFFERQUEUE};
     const SLboolean req[1] = {SL_BOOLEAN_TRUE};
 
-    SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
-    SLDataSink audioSnk = {&outputMix, NULL};
-
+    SLDataSource slDataSource = {&androidBufferQueue, &pcm};
 
     (*engineEngine)->CreateAudioPlayer(engineEngine, &pcmPlayerObject, &slDataSource, &audioSnk, 1,
                                        ids, req);
