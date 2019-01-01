@@ -14,7 +14,7 @@ public class YCGLSurfaceView extends GLSurfaceView {
     public YCGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setEGLContextClientVersion(2);
-        setRenderer(new YCRender());
+        setRenderer(new YCRender(context));
 
     }
 }
